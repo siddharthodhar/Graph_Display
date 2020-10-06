@@ -1,343 +1,439 @@
 package com.siddhartho.graph;
 
+import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.Toast;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
+import com.siddhartho.graph.databinding.ActivityMainBinding;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
-
+    private static final String TAG = "MainActivity";
+    private static final int REQUEST_PERMISSION_SAVE_IMAGE = 101, REQUEST_PERMISSION_SAVE_PDF = 102;
+    private ActivityMainBinding binding;
+    private Animator currentAnimator;
+    private int shortAnimationDuration;
+    private float startScale;
+    private Rect startBounds;
+    private Menu menu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        Log.d(TAG, "onCreate() called with: savedInstanceState = [" + savedInstanceState + "]");
 
-        Double y, x;
+        addSeriesToGraph();
 
-        GraphView graph = (GraphView) findViewById(R.id.graph);
-        GraphView graph4 = (GraphView) findViewById(R.id.graph4);
-        GraphView graph5 = (GraphView) findViewById(R.id.graph5);
-        GraphView graph6 = (GraphView) findViewById(R.id.graph6);
-        GraphView graph1 = (GraphView) findViewById(R.id.graph1);
-        GraphView graph7 = (GraphView) findViewById(R.id.graph7);
-        GraphView graph8 = (GraphView) findViewById(R.id.graph8);
-        GraphView graph9 = (GraphView) findViewById(R.id.graph9);
-        GraphView graph2 = (GraphView) findViewById(R.id.graph2);
-        GraphView graph10 = (GraphView) findViewById(R.id.graph10);
-        GraphView graph11 = (GraphView) findViewById(R.id.graph11);
-        GraphView graph12 = (GraphView) findViewById(R.id.graph12);
-        GraphView graph3 = (GraphView) findViewById(R.id.graph3);
-        GraphView graph13 = (GraphView) findViewById(R.id.graph13);
-        GraphView graph14 = (GraphView) findViewById(R.id.graph14);
-        GraphView graph15 = (GraphView) findViewById(R.id.graph15);
+        shortAnimationDuration = getResources().getInteger(android.R.integer.config_shortAnimTime);
+    }
 
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sin(x);
-            series.appendData(new DataPoint(x, y), true, 1000);
+    private void addSeriesToGraph() {
+        Log.d(TAG, "addSeriesToGraph() called");
+        addSeriesToGraph(binding.graph, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph1, WaveType.POLYNOMIAL_WAVE);
+        addSeriesToGraph(binding.graph2, WaveType.SINE_HYPERBOLIC_WAVE);
+        addSeriesToGraph(binding.graph3, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph4, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph5, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph6, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph7, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph8, WaveType.POLYNOMIAL_WAVE);
+        addSeriesToGraph(binding.graph9, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph10, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph11, WaveType.SINE_HYPERBOLIC_WAVE);
+        addSeriesToGraph(binding.graph12, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph13, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph14, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph15, WaveType.SINE_WAVE);
+    }
+
+    private void addSeriesToExpandedGraph() {
+        Log.d(TAG, "addSeriesToExpandedGraph() called");
+        addSeriesToGraph(binding.graphExpanded, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph1Expanded, WaveType.POLYNOMIAL_WAVE);
+        addSeriesToGraph(binding.graph2Expanded, WaveType.SINE_HYPERBOLIC_WAVE);
+        addSeriesToGraph(binding.graph3Expanded, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph4Expanded, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph5Expanded, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph6Expanded, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph7Expanded, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph8Expanded, WaveType.POLYNOMIAL_WAVE);
+        addSeriesToGraph(binding.graph9Expanded, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph10Expanded, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph11Expanded, WaveType.SINE_HYPERBOLIC_WAVE);
+        addSeriesToGraph(binding.graph12Expanded, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph13Expanded, WaveType.SINE_WAVE);
+        addSeriesToGraph(binding.graph14Expanded, WaveType.COSINE_WAVE);
+        addSeriesToGraph(binding.graph15Expanded, WaveType.SINE_WAVE);
+    }
+
+    private void zoomIn() {
+        Log.d(TAG, "zoomIn() called");
+        if (currentAnimator != null) {
+            currentAnimator.cancel();
         }
-        graph.setTitle("Sine Wave");
+        addSeriesToExpandedGraph();
+
+        startBounds = new Rect();
+        final Rect finalBounds = new Rect();
+        final Point globalOffset = new Point();
+
+        binding.container.getGlobalVisibleRect(startBounds);
+        binding.containerExpanded.getGlobalVisibleRect(finalBounds, globalOffset);
+        startBounds.offset(-globalOffset.x, -globalOffset.y);
+        finalBounds.offset(-globalOffset.x, -globalOffset.y);
+
+        if ((float) finalBounds.width() / finalBounds.height()
+                > (float) startBounds.width() / startBounds.height()) {
+            startScale = (float) startBounds.height() / finalBounds.height();
+            float startWidth = startScale * finalBounds.width();
+            float deltaWidth = (startWidth - startBounds.width()) / 2;
+            startBounds.left -= deltaWidth;
+            startBounds.right += deltaWidth;
+        } else {
+            startScale = (float) startBounds.width() / finalBounds.width();
+            float startHeight = startScale * finalBounds.height();
+            float deltaHeight = (startHeight - startBounds.height()) / 2;
+            startBounds.top -= deltaHeight;
+            startBounds.bottom += deltaHeight;
+        }
+
+        binding.container.setAlpha(0f);
+        binding.containerExpanded.setVisibility(View.VISIBLE);
+
+        binding.containerExpanded.setPivotX(0f);
+        binding.containerExpanded.setPivotY(0f);
+
+        AnimatorSet set = new AnimatorSet();
+        set
+                .play(ObjectAnimator.ofFloat(binding.containerExpanded, View.X,
+                        startBounds.left, finalBounds.left))
+                .with(ObjectAnimator.ofFloat(binding.containerExpanded, View.Y,
+                        startBounds.top, finalBounds.top))
+                .with(ObjectAnimator.ofFloat(binding.containerExpanded, View.SCALE_X,
+                        startScale, 1f))
+                .with(ObjectAnimator.ofFloat(binding.containerExpanded,
+                        View.SCALE_Y, startScale, 1f));
+        set.setDuration(shortAnimationDuration);
+        set.setInterpolator(new DecelerateInterpolator());
+        set.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                currentAnimator = null;
+                menu.findItem(R.id.zoom).setTitle(R.string.zoom_out);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                currentAnimator = null;
+            }
+        });
+        set.start();
+        currentAnimator = set;
+    }
+
+    private void zoomOut() {
+        Log.d(TAG, "zoomOut() called");
+        final float startScaleFinal = startScale;
+
+        if (currentAnimator != null) {
+            currentAnimator.cancel();
+        }
+
+        AnimatorSet set = new AnimatorSet();
+        set.play(ObjectAnimator
+                .ofFloat(binding.containerExpanded, View.X, startBounds.left))
+                .with(ObjectAnimator
+                        .ofFloat(binding.containerExpanded,
+                                View.Y, startBounds.top))
+                .with(ObjectAnimator
+                        .ofFloat(binding.containerExpanded,
+                                View.SCALE_X, startScaleFinal))
+                .with(ObjectAnimator
+                        .ofFloat(binding.containerExpanded,
+                                View.SCALE_Y, startScaleFinal));
+        set.setDuration(shortAnimationDuration);
+        set.setInterpolator(new DecelerateInterpolator());
+        set.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                binding.container.setAlpha(1f);
+                binding.containerExpanded.setVisibility(View.GONE);
+                currentAnimator = null;
+                menu.findItem(R.id.zoom).setTitle(R.string.zoom_in);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                binding.container.setAlpha(1f);
+                binding.containerExpanded.setVisibility(View.GONE);
+                currentAnimator = null;
+            }
+        });
+        set.start();
+        currentAnimator = set;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        Log.d(TAG, "onCreateOptionsMenu() called with: menu = [" + menu + "]");
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        this.menu = menu;
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        Log.d(TAG, "onOptionsItemSelected() called with: item = [" + item + "]");
+        switch (item.getItemId()) {
+            case R.id.zoom:
+                if (item.getTitle().equals(getResources().getString(R.string.zoom_in))) zoomIn();
+                else zoomOut();
+                return true;
+            case R.id.saveAsImage:
+                saveAsImage();
+                return true;
+            case R.id.saveAsPdf:
+                saveAsPdf();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.d(TAG, "onRequestPermissionsResult() called with: requestCode = [" + requestCode + "], permissions = [" + Arrays.toString(permissions) + "], grantResults = [" + Arrays.toString(grantResults) + "]");
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) switch (requestCode) {
+            case REQUEST_PERMISSION_SAVE_IMAGE:
+                saveAsImage();
+                break;
+            case REQUEST_PERMISSION_SAVE_PDF:
+                saveAsPdf();
+                break;
+        }
+    }
+
+    private void addSeriesToGraph(GraphView graph, WaveType waveType) {
+        Log.d(TAG, "addSeriesToGraph() called with: graph = [" + graph + "], waveType = [" + waveType + "]");
+        graph.setTitle(waveType.getName());
         graph.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
         graph.getGridLabelRenderer().setVerticalLabelsVisible(false);
         graph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series.setColor(Color.BLACK);
-        graph.getViewport().setBackgroundColor(Color.BLUE);
         graph.getViewport().setXAxisBoundsManual(true);
-        graph.getViewport().setMinX(0);
-        graph.getViewport().setMaxX(90);
+        if (waveType == WaveType.SINE_HYPERBOLIC_WAVE || waveType == WaveType.POLYNOMIAL_WAVE) {
+            graph.getViewport().setMinX(-10);
+            graph.getViewport().setMaxX(20);
+        } else {
+            graph.getViewport().setMinX(0);
+            graph.getViewport().setMaxX(30);
+        }
 //        graph.getViewport().setScalable(true);
-        graph.addSeries(series);
+        graph.addSeries(getSeries(waveType));
+    }
 
-        LineGraphSeries<DataPoint> series4 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
+    private LineGraphSeries<DataPoint> getSeries(WaveType waveType) {
+        Log.d(TAG, "getSeries() called with: waveType = [" + waveType + "]");
+        double x = 0.0, y = 0.0;
+        LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
         for (int i = 0; i < 1000; i++) {
             x = x + 0.1;
-            y = Math.cos(x);
-            series4.appendData(new DataPoint(x, y), true, 1000);
+            switch (waveType) {
+                case SINE_WAVE:
+                    y = Math.sin(x);
+                    break;
+                case COSINE_WAVE:
+                    y = Math.cos(x);
+                    break;
+                case POLYNOMIAL_WAVE:
+                    y = -0.0000156 * Math.pow((x - 5), 4) + 4.5;
+                    break;
+                case SINE_HYPERBOLIC_WAVE:
+                    y = Math.sinh(x);
+                    break;
+            }
+            series.appendData(new DataPoint(x, y), true, 1000);
         }
-        graph4.setTitle("Cosine Wave");
-        graph4.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph4.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph4.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series4.setColor(Color.GREEN);
-        graph4.getViewport().setBackgroundColor(Color.BLUE);
-        graph4.getViewport().setXAxisBoundsManual(true);
-        graph4.getViewport().setMinX(0);
-        graph4.getViewport().setMaxX(90);
-//        graph4.getViewport().setScalable(true);
-        graph4.addSeries(series4);
+        series.setColor(waveType.getColor());
+        return series;
+    }
 
-        LineGraphSeries<DataPoint> series5 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sin(x);
-            series5.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph5.setTitle("Sine Wave");
-        graph5.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph5.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph5.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series5.setColor(Color.BLACK);
-        graph5.getViewport().setBackgroundColor(Color.BLUE);
-        graph5.getViewport().setXAxisBoundsManual(true);
-        graph5.getViewport().setMinX(0);
-        graph5.getViewport().setMaxX(90);
-//        graph5.getViewport().setScalable(true);
-        graph5.addSeries(series5);
+    private void saveAsPdf() {
+        Log.d(TAG, "saveAsPdf() called");
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-        LineGraphSeries<DataPoint> series6 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.cos(x);
-            series6.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph6.setTitle("Cosine Wave");
-        graph6.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph6.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph6.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series6.setColor(Color.GREEN);
-        graph6.getViewport().setBackgroundColor(Color.BLUE);
-        graph6.getViewport().setXAxisBoundsManual(true);
-        graph6.getViewport().setMinX(0);
-        graph6.getViewport().setMaxX(90);
-//        graph6.getViewport().setScalable(true);
-        graph6.addSeries(series6);
+                if (binding.containerExpanded.getVisibility() != View.VISIBLE)
+                    zoomIn();
 
-        LineGraphSeries<DataPoint> series1 = new LineGraphSeries<DataPoint>();
-        x = -10.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = -0.0000156 * Math.pow((x - 5), 4) + 4.5;
-            series1.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph1.setTitle("Polynomial Wave");
-        graph1.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph1.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph1.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series1.setColor(Color.YELLOW);
-        graph1.getViewport().setBackgroundColor(Color.BLUE);
-        graph1.getViewport().setXAxisBoundsManual(true);
-        graph1.getViewport().setMinX(-10);
-        graph1.getViewport().setMaxX(15);
-//        graph1.getViewport().setScalable(true);
-        graph1.addSeries(series1);
+                Bitmap bitmap = getBitmapFromView(
+                        binding.horizontalScrollContainer,
+                        binding.horizontalScrollContainer.getChildAt(0).getHeight(),
+                        binding.horizontalScrollContainer.getChildAt(0).getWidth());
 
-        LineGraphSeries<DataPoint> series7 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.cos(x);
-            series7.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph7.setTitle("Cosine Wave");
-        graph7.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph7.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph7.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series7.setColor(Color.GREEN);
-        graph7.getViewport().setBackgroundColor(Color.BLUE);
-        graph7.getViewport().setXAxisBoundsManual(true);
-        graph7.getViewport().setMinX(0);
-        graph7.getViewport().setMaxX(90);
-//        graph7.getViewport().setScalable(true);
-        graph7.addSeries(series7);
+                PdfDocument pdfDocument = new PdfDocument();
+                PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
+                        bitmap.getWidth(),
+                        bitmap.getHeight(),
+                        1).create();
+                PdfDocument.Page page = pdfDocument.startPage(pageInfo);
+                page.getCanvas().drawBitmap(bitmap, 0, 0, null);
+                pdfDocument.finishPage(page);
 
-        LineGraphSeries<DataPoint> series8 = new LineGraphSeries<DataPoint>();
-        x = -10.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = -0.0000156 * Math.pow((x - 5), 4) + 4.5;
-            series8.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph8.setTitle("Polynomial Wave");
-        graph8.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph8.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph8.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series8.setColor(Color.YELLOW);
-        graph8.getViewport().setBackgroundColor(Color.BLUE);
-        graph8.getViewport().setXAxisBoundsManual(true);
-        graph8.getViewport().setMinX(-10);
-        graph8.getViewport().setMaxX(15);
-//        graph8.getViewport().setScalable(true);
-        graph8.addSeries(series8);
+                try {
+                    FileOutputStream fos = provideFileOutputStream("PDF", getFilename(false));
+                    if (fos != null) {
+                        pdfDocument.writeTo(fos);
+                        fos.flush();
+                        fos.close();
+                        Toast.makeText(this, R.string.toast_pdf_saved, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "saveAsPdf: error = " + e.getMessage(), e);
+                }
+            } else
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_PERMISSION_SAVE_PDF);
+        } else Toast.makeText(this, R.string.toast_android_version, Toast.LENGTH_LONG).show();
+    }
 
-        LineGraphSeries<DataPoint> series9 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.cos(x);
-            series9.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph9.setTitle("Cosine Wave");
-        graph9.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph9.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph9.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series9.setColor(Color.GREEN);
-        graph9.getViewport().setBackgroundColor(Color.BLUE);
-        graph9.getViewport().setXAxisBoundsManual(true);
-        graph9.getViewport().setMinX(0);
-        graph9.getViewport().setMaxX(90);
-//        graph9.getViewport().setScalable(true);
-        graph9.addSeries(series9);
+    private void saveAsImage() {
+        Log.d(TAG, "saveAsImage() called");
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-        LineGraphSeries<DataPoint> series2 = new LineGraphSeries<DataPoint>();
-        x = -10.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sinh(x);
-            series2.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph2.setTitle("Sine Hyperbolic Wave");
-        graph2.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph2.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph2.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series2.setColor(Color.RED);
-        graph2.getViewport().setBackgroundColor(Color.BLUE);
-        graph2.getViewport().setXAxisBoundsManual(true);
-        graph2.getViewport().setMinX(-10);
-        graph2.getViewport().setMaxX(15);
-//        graph2.getViewport().setScalable(true);
-        graph2.addSeries(series2);
+            if (binding.containerExpanded.getVisibility() != View.VISIBLE)
+                zoomIn();
 
-        LineGraphSeries<DataPoint> series10 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sin(x);
-            series10.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph10.setTitle("Sine Wave");
-        graph10.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph10.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph10.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series10.setColor(Color.BLACK);
-        graph10.getViewport().setBackgroundColor(Color.BLUE);
-        graph10.getViewport().setXAxisBoundsManual(true);
-        graph10.getViewport().setMinX(0);
-        graph10.getViewport().setMaxX(90);
-//        graph10.getViewport().setScalable(true);
-        graph10.addSeries(series10);
+            Bitmap bitmap = getBitmapFromView(
+                    binding.horizontalScrollContainer,
+                    binding.horizontalScrollContainer.getChildAt(0).getHeight(),
+                    binding.horizontalScrollContainer.getChildAt(0).getWidth());
 
-        LineGraphSeries<DataPoint> series11 = new LineGraphSeries<DataPoint>();
-        x = -10.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sinh(x);
-            series11.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph11.setTitle("Sine Hyperbolic Wave");
-        graph11.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph11.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph11.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series11.setColor(Color.RED);
-        graph11.getViewport().setBackgroundColor(Color.BLUE);
-        graph11.getViewport().setXAxisBoundsManual(true);
-        graph11.getViewport().setMinX(-10);
-        graph11.getViewport().setMaxX(15);
-//        graph11.getViewport().setScalable(true);
-        graph11.addSeries(series11);
+            try {
+                FileOutputStream fos = provideFileOutputStream("Image", getFilename(true));
+                if (fos != null) {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                    fos.flush();
+                    fos.close();
+                    Toast.makeText(this, R.string.toast_jpg_saved, Toast.LENGTH_SHORT).show();
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "saveAsImage: error = " + e.getMessage(), e);
+            }
+        } else
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_PERMISSION_SAVE_IMAGE);
+    }
 
-        LineGraphSeries<DataPoint> series12 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sin(x);
-            series12.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph12.setTitle("Sine Wave");
-        graph12.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph12.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph12.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series12.setColor(Color.BLACK);
-        graph12.getViewport().setBackgroundColor(Color.BLUE);
-        graph12.getViewport().setXAxisBoundsManual(true);
-        graph12.getViewport().setMinX(0);
-        graph12.getViewport().setMaxX(90);
-//        graph12.getViewport().setScalable(true);
-        graph12.addSeries(series12);
+    private Bitmap getBitmapFromView(View view, int height, int width) {
+        Log.d(TAG, "getBitmapFromView() called with: view = [" + view + "], height = [" + height + "], width = [" + width + "]");
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Drawable bgDrawable = view.getBackground();
+        if (bgDrawable != null)
+            bgDrawable.draw(canvas);
+        else
+            canvas.drawColor(Color.WHITE);
+        view.draw(canvas);
+        return bitmap;
+    }
 
-        LineGraphSeries<DataPoint> series3 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.cos(x);
-            series3.appendData(new DataPoint(x, y), true, 1000);
+    private FileOutputStream provideFileOutputStream(String folderName, String filename) throws IOException {
+        Log.d(TAG, "provideFileOutputStream() called with: folderName = [" + folderName + "], filename = [" + filename + "]");
+        FileOutputStream fos = null;
+        File root = new File(Environment.getExternalStorageDirectory(), "Graph/" + folderName);
+        if (root.exists() || root.mkdirs()) {
+            File file = new File(root, filename);
+            if (file.createNewFile()) fos = new FileOutputStream(file);
         }
-        graph3.setTitle("Cosine Wave");
-        graph3.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph3.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph3.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series3.setColor(Color.GREEN);
-        graph3.getViewport().setBackgroundColor(Color.BLUE);
-        graph3.getViewport().setXAxisBoundsManual(true);
-        graph3.getViewport().setMinX(0);
-        graph3.getViewport().setMaxX(90);
-//        graph3.getViewport().setScalable(true);
-        graph3.addSeries(series3);
+        return fos;
+    }
 
-        LineGraphSeries<DataPoint> series13 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sin(x);
-            series13.appendData(new DataPoint(x, y), true, 1000);
-        }
-        graph13.setTitle("Sine Wave");
-        graph13.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph13.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph13.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series13.setColor(Color.BLACK);
-        graph13.getViewport().setBackgroundColor(Color.BLUE);
-        graph13.getViewport().setXAxisBoundsManual(true);
-        graph13.getViewport().setMinX(0);
-        graph13.getViewport().setMaxX(90);
-//        graph13.getViewport().setScalable(true);
-        graph13.addSeries(series13);
+    private String getFilename(boolean isImage) {
+        Log.d(TAG, "getFilename() called with: isImage = [" + isImage + "]");
+        SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.ENGLISH);
+        if (isImage)
+            return format.format(Calendar.getInstance().getTime()) + " Graph.jpg";
+        else
+            return format.format(Calendar.getInstance().getTime()) + " Graph.pdf";
+    }
 
-        LineGraphSeries<DataPoint> series14 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.cos(x);
-            series14.appendData(new DataPoint(x, y), true, 1000);
+    @Override
+    public void onBackPressed() {
+        Log.d(TAG, "onBackPressed() called");
+        if (binding.containerExpanded.getVisibility() == View.VISIBLE)
+            zoomOut();
+        else {
+            finish();
+            super.onBackPressed();
         }
-        graph14.setTitle("Cosine Wave");
-        graph14.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph14.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph14.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series14.setColor(Color.GREEN);
-        graph14.getViewport().setBackgroundColor(Color.BLUE);
-        graph14.getViewport().setXAxisBoundsManual(true);
-        graph14.getViewport().setMinX(0);
-        graph14.getViewport().setMaxX(90);
-//        graph14.getViewport().setScalable(true);
-        graph14.addSeries(series14);
+    }
 
-        LineGraphSeries<DataPoint> series15 = new LineGraphSeries<DataPoint>();
-        x = 0.0;
-        for (int i = 0; i < 1000; i++) {
-            x = x + 0.1;
-            y = Math.sin(x);
-            series15.appendData(new DataPoint(x, y), true, 1000);
+    private enum WaveType {
+
+        SINE_WAVE("Sine Wave", Color.BLACK),
+        COSINE_WAVE("Cosine Wave", Color.GREEN),
+        POLYNOMIAL_WAVE("Polynomial Wave", Color.YELLOW),
+        SINE_HYPERBOLIC_WAVE("Sine Hyperbolic Wave", Color.RED);
+
+        private String name;
+        private int color;
+
+        WaveType(String name, int color) {
+            this.name = name;
+            this.color = color;
         }
-        graph15.setTitle("Sine Wave");
-        graph15.getGridLabelRenderer().setGridStyle(GridLabelRenderer.GridStyle.NONE);
-        graph15.getGridLabelRenderer().setVerticalLabelsVisible(false);
-        graph15.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        series15.setColor(Color.BLACK);
-        graph15.getViewport().setBackgroundColor(Color.BLUE);
-        graph15.getViewport().setXAxisBoundsManual(true);
-        graph15.getViewport().setMinX(0);
-        graph15.getViewport().setMaxX(90);
-//        graph15.getViewport().setScalable(true);
-        graph15.addSeries(series15);
+
+        String getName() {
+            return name;
+        }
+
+        int getColor() {
+            return color;
+        }
     }
 }

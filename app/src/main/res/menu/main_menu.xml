@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/zoom"
+        android:title="@string/zoom_in" />
+    <item
+        android:id="@+id/saveAsPdf"
+        android:title="@string/save_as_pdf" />
+    <item
+        android:id="@+id/saveAsImage"
+        android:title="@string/save_as_image" />
+</menu>

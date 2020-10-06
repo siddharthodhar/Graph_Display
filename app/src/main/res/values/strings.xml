@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Graph</string>
+    <string name="save_as_pdf">Save as PDF</string>
+    <string name="save_as_image">Save as Image</string>
+    <string name="zoom_in">Zoom-In</string>
+    <string name="zoom_out">Zoom-Out</string>
+    <string name="toast_pdf_saved">PDF saved successfully.</string>
+    <string name="toast_jpg_saved">Image saved successfully.</string>
+    <string name="toast_android_version">Android version needs to be Kitkat or above (you can still save as Image).</string>
 </resources>
